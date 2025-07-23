@@ -4,7 +4,7 @@ output:
   html_document: default
   pdf_document: default
 date: "2025-05-02"
-Aim: Visualize the figures showed in the stability project (Jinxia)
+Aim: Visualize the figures showed in the stability project
 Contact: lipei.shao@nih.gov
 ---
 
@@ -31,23 +31,20 @@ library(ReactomePA)
 ```{r set parameters}
 HPC_base <- "#1f77b4"  # blue
 MNC_base <- "#d62728"  # red
-HPC_day_color <- c("#00366C","#468FD0","#A1C4F1","#E1EEFF","#8799B0")
-MNC_day_color <- c("#69000C","#CC1C2F","#FF999E","#FFDEE0","#A79393")
-HPC_donor_color<- c("#008080", "#1BA098", "#3BB3AC", 
-                      "#5CC6C1", "#7DD9D6", "#9DECEC", "#BFFEFF")
-MNC_donor_color <- c("#d62728", "#c7504c", "#b7796f", 
-                       "#a7a193", "#9799a6", "#878f99")
-heatmap_colors <- colorRamp2(c(-2, 0, 2), c("#1f77b4", "#f7f7f7", "#d62728"))  # brown → white → red
-HPC_colors_day0day1 <- c("#00366C","#468FD0")
+HPC_day_color <- c("#0D1F2D", "#144A74", "#2878B5","#75AADB","#8799B0")
+MNC_day_color <- c("#69000C","#CC1C2F","#FF999E","#b7796f","#A79393")
+heatmap_colors <- colorRampPalette(c("darkgreen", "white", "purple4"))(100)
+HPC_colors_day0day1 <- c("#0D1F2D", "#144A74")
 pathway_color <- "orange3"
-input_dir = "./02.Input/"
-output_dir = "./03.Output/"
+input_dir = "../02.Input/"
+output_dir = "../03.Output/"
 ```
 
 # Load data
 ```{r load data}
 WBC <- read_excel(paste0(input_dir,'AllData.xlsx'),"WBC")
 Viability <- read_excel(paste0(input_dir,'AllData.xlsx'),"Viability")
+Donor_Viability <- read_excel(paste0(input_dir,'AllData.xlsx'),"Donor_Viability")
 Lymphocytes <- read_excel(paste0(input_dir,'AllData.xlsx'),"Lymphocytes")
 Neutrophils <- read_excel(paste0(input_dir,'AllData.xlsx'),"Neutrophils")
 Monocytes <- read_excel(paste0(input_dir,'AllData.xlsx'),"Monocytes")
@@ -114,6 +111,38 @@ Viability_plot <- ggplot(summary_df_Viability, aes(x = Day, y = mean_val, group 
   facet_grid(Group~Type)
 #save
 ggsave(paste0(output_dir,paste0("1b.Viability_across_timepoints.pdf")),width = 1.2*3, height = 1.0*2.5)
+```
+
+# Individual sample variability was notable
+```{r plot figure to present the sample variability, label HPC group: donor1, donor6}
+label_data <- Donor_Viability %>%
+  filter(Group == "HPC", Donor %in% c("Donor1", "Donor6")) %>%
+  group_by(Donor) %>%
+  filter(Day == max(Day))
+donor_via <- ggplot(Donor_Viability, aes(x = Day, y = Value, group = Donor)) +
+  geom_line(color = "grey60", size = 0.2,linetype = "twodash") +
+  geom_point(aes(color = factor(Day_Group)), size = 1.2) +
+  geom_text(data = label_data, aes(label = Donor), 
+            hjust = 0.8, vjust = 1.3, size = 2.5, show.legend = FALSE,fontface = "bold") +
+  scale_color_manual(
+    values = c("HPC0" = "#00366C", "HPC1" = "#468FD0", "HPC2" = "#A1C4F1", 
+               "HPC3" = "#E1EEFF", "HPC4" = "#8799B0",
+               "MNC0" = "#69000C", "MNC1" = "#CC1C2F", "MNC2" = "#FF999E", 
+               "MNC3" = "#FFDEE0", "MNC4" = "#A79393"),
+    breaks = NULL
+  ) +
+  labs(x = "Day relative to collection",
+       y = "Viability (% to 7-ADD)") +
+  ylim(70, 100) +
+  labs(title = "Viability")+
+  theme_bw() +
+  facet_grid(Group ~ .)+
+  theme(
+    strip.background = element_blank(), 
+    strip.text = element_text(face = "bold"),
+    plot.title = element_text(hjust = 0.5, size = 11,face = "bold")  # Centered, larger, bold title
+  )
+ggsave(paste0(output_dir,paste0("S1d.Donor_Viability_inGroup.pdf")),width = 1.2*3, height = 1.2*2.5)
 ```
 
 # Figure2. TBNK (2a), Neutrophils (2b), and Monocytes (2c)
@@ -291,16 +320,16 @@ ggsave(paste0(output_dir,paste0("S1c.NLRMLR_across_timepoints.pdf")),width = 2.4
 #3a, pca for hpc samples
 #plot
 hpc_pca_plot <- ggplot(hpc_PCA, aes(x = -PC1, y = -PC2)) +
-  geom_point(aes(color=Day,shape=Donor),size=7,stroke = 2)+
-  scale_shape_manual(values = c(0,1,2,3,4,8,13))+
-  geom_hline(yintercept = 0,linetype="dashed")+
-  geom_vline(xintercept = 0,linetype="dashed")+
-  labs(x="PC1 (57%)",y="PC2 (18.1%)")+
-  ggtitle("HPC samples")+
-  theme_bw()+
-  scale_color_manual(values=HPC_day_color)+
+  geom_text_repel(aes(label = Day_Donor, color = Day), size = 3.5, max.overlaps = 20,segment.color = NA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey70") +
+  labs(x = "PC1 (57%)", y = "PC2 (18.1%)") +
+  ggtitle("HPC samples") +
+  theme_classic() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = HPC_day_color) +
   scale_x_continuous(labels = label_scientific()) +
-  scale_y_continuous(labels = label_scientific())
+  scale_y_continuous(labels = label_scientific()) 
 #save
 ggsave(paste0(output_dir,paste0("3a.PCA_HPC.pdf")),width = 3*2, height = 2.5*2)
 
@@ -321,35 +350,37 @@ sample_info_hpc <- data.frame(
   labels <- dendro_data$labels
   labels <- merge(labels, sample_info_hpc, by = "label")
  hpc_dengrogram <- ggplot() +
-    geom_segment(data = dendro_data$segments,
-                 aes(x = x, y = y, xend = xend, yend = yend)) +
-    geom_point(data = labels,
-               aes(x = x, y = y, color = Time, shape = Donor), size = 3,stroke = 2) +
-    geom_text(data = labels,
-              aes(x = x, y = y - 1800, label = Time),  # adjust `-2` to control vertical spacing
-              size = 3, angle = 90,vjust = 0.25) +
-    scale_color_manual(values = HPC_day_color) +  # or define your own Donor color palette
-    scale_shape_manual(values = c(0,1,2,3,4,8,13)) +  # adjust as needed
-    theme_minimal() +
-    labs(title = "HPC Dendrogram", x = NULL, y = "Distance") +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank())
+  geom_segment(data = dendro_data$segments,
+               aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_point(data = labels,
+             aes(x = x, y = y, color = Time),shape = 16, size = 3,stroke = 1) +
+  geom_text(data = labels,
+            aes(x = x, y = y - 1200, label = Donor),  # adjust `-2` to control vertical spacing
+            size = 3, angle = 90,vjust = 0.25) +
+  scale_color_manual(values = HPC_day_color) +  # or define your own Donor color palette
+  # scale_shape_manual(values = c(0,1,2,3,4,8,13)) +  # adjust as needed
+  theme_minimal() +
+  labs(title = "HPC Dendrogram", x = NULL, y = "Distance") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
 #save
 ggsave(paste0(output_dir,paste0("3b.Dendrogram_HPC.pdf")),width = 5*2, height = 2*2)
 
 #3c, pca for mnc samples
 #plot
-mnc_pca_plot <- ggplot(mnc_PCA, aes(x = -PC1, y = -PC2)) +
-  geom_point(aes(color=Day,shape=Donor),size=7,stroke = 2)+
-  scale_shape_manual(values = c(0,1,2,3,4,8))+
-  geom_hline(yintercept = 0,linetype="dashed")+
-  geom_vline(xintercept = 0,linetype="dashed")+
-  labs(x="PC1 (78.7%)",y="PC2 (16.4%)")+
-  ggtitle("MNC samples")+
-  theme_bw()+
-  scale_color_manual(values=MNC_day_color)+
+mnc_pca_plot <-  ggplot(mnc_PCA, aes(x = -PC1, y = -PC2)) +
+  # geom_point(aes(shape = Day),size = 5, stroke = 1.2) +
+  # scale_shape_manual(values = c(0,1,2,3,4)) +
+  geom_text_repel(aes(label = Donor, color = Day), size = 3.5, max.overlaps = 20,segment.color = NA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey70") +
+  labs(x = "PC1 (78.7%)", y = "PC2 (16.4%)") +
+  ggtitle("MNC samples") +
+  theme_classic() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = MNC_day_color) +
   scale_x_continuous(labels = label_scientific()) +
-  scale_y_continuous(labels = label_scientific())
+  scale_y_continuous(labels = label_scientific()) 
 #save
 ggsave(paste0(output_dir,paste0("3c.PCA_MNC.pdf")),width = 3*2, height = 2.5*2)
 
@@ -369,19 +400,18 @@ sample_info_mnc <- data.frame(
   labels <- dendro_data$labels
   labels <- merge(labels, sample_info_mnc, by = "label")
  mnc_dengrogram <-  ggplot() +
-    geom_segment(data = dendro_data$segments,
-                 aes(x = x, y = y, xend = xend, yend = yend)) +
-    geom_point(data = labels,
-               aes(x = x, y = y, color = Time, shape = Donor), size = 3,stroke = 2) +
-    geom_text(data = labels,
-              aes(x = x, y = y - 11000, label = Time),  # adjust `-2` to control vertical spacing
-              size = 3, angle = 90,vjust = 0.25) +
-    scale_color_manual(values = MNC_day_color) +  # or define your own Donor color palette
-    scale_shape_manual(values = c(0,1,2,3,4,8)) +  # adjust as needed
-    theme_minimal() +
-    labs(title = "MNC Dendrogram", x = NULL, y = "Distance") +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank())
+  geom_segment(data = dendro_data$segments,
+               aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_point(data = labels,
+             aes(x = x, y = y, color = Time),shape = 16, size = 3,stroke = 1) +
+  geom_text(data = labels,
+            aes(x = x, y = y - 9000, label = Donor),  # adjust `-2` to control vertical spacing
+            size = 3, angle = 90,vjust = 0.25) +
+  scale_color_manual(values = MNC_day_color) +  # or define your own Donor color palette
+  theme_minimal() +
+  labs(title = "MNC Dendrogram", x = NULL, y = "Distance") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
 #save
 ggsave(paste0(output_dir,paste0("3d.Dendrogram_MNC.pdf")),width = 5*2, height = 2*2)
 ```
@@ -397,24 +427,26 @@ expr_scaled_hpc[1:5,1:5]
 expr_scaled_clean_hpc <- expr_scaled_hpc[complete.cases(expr_scaled_hpc) & rowSums(is.finite(expr_scaled_hpc)) == ncol(expr_scaled_hpc), ]
 #plot
  heatmap_hpc <- Heatmap(
-    expr_scaled_clean_hpc,
-    name = "Z-score",
-    col = heatmap_colors,
-    cluster_rows = TRUE,
-    cluster_columns = FALSE, # supervised: you can order by time
-    column_split = factor(sample_info_hpc$Donor, 
-                          levels = c("Donor1", "Donor2", "Donor3", 
-                                     "Donor4", "Donor5","Donor6","Donor7")),
-    show_column_names = FALSE,
-    show_row_names = FALSE,
-    use_raster = FALSE,
-    top_annotation = HeatmapAnnotation(Donor = sample_info_hpc$Donor,
-                                       Time = sample_info_hpc$Time,
-                                       col = list(
-                                         Donor = setNames(HPC_donor_color, paste0("Donor", 1:7)),
-                                         Time = setNames(HPC_day_color, paste0("Day", 0:4)))
-    )
+  expr_scaled_clean_hpc,
+  name = "Z-score",
+  col = heatmap_colors,
+  cluster_rows = TRUE,
+  cluster_columns = FALSE, # supervised: you can order by time
+  column_split = factor(sample_info_hpc$Donor, 
+                        levels = c("Donor1", "Donor2", "Donor3", 
+                                   "Donor4", "Donor5","Donor6","Donor7")),
+  column_title_gp = gpar(fontsize = 9),
+  row_dend_gp = gpar(lwd = 0.1,col = "grey70"),
+  show_column_names = FALSE,
+  show_row_names = FALSE,
+  use_raster = FALSE,
+  top_annotation = HeatmapAnnotation(
+    Time = sample_info_hpc$Time,
+    col = list(Time = setNames(HPC_day_color, paste0("Day", 0:4))),
+    annotation_name_gp = gpar(fontsize = 9),            # <- font size for "Time"
+    simple_anno_size = unit(0.2,"cm")                  # <- annotation bar height
   )
+)
 #save
 pdf(paste0(output_dir, "4a.heatmap_hpc.pdf"), width = 4*2, height = 2.5*2)
 draw(heatmap_hpc)
@@ -427,23 +459,26 @@ expr_scaled_mnc <- t(scale(t(mnc_ExpressionTPM)))
 expr_scaled_clean_mnc <- expr_scaled_mnc[complete.cases(expr_scaled_mnc) & rowSums(is.finite(expr_scaled_mnc)) == ncol(expr_scaled_mnc), ]
 #plot
  heatmap_mnc <-   Heatmap(
-    expr_scaled_clean_mnc,
-    name = "Z-score",
-    col = heatmap_colors,
-    cluster_rows = TRUE,
-    cluster_columns = FALSE, # supervised: you can order by time
-    column_split = factor(sample_info_mnc$Donor, levels = c("Donor1", "Donor2", "Donor3", 
-                                                            "Donor4", "Donor5","Donor6")),
-    show_column_names = FALSE,
-    show_row_names = FALSE,
-    use_raster = FALSE,
-    top_annotation = HeatmapAnnotation(Donor = sample_info_mnc$Donor,
-                                       Time = sample_info_mnc$Time,
-                                       annotation_height = unit(c(0.2,0.2),"mm"),
-                                       col = list(
-                                         Donor = setNames(MNC_donor_color, paste0("Donor", 1:6)),
-                                         Time = setNames(MNC_day_color, paste0("Day", 0:4))))
+  expr_scaled_clean_mnc,
+  name = "Z-score",
+  col = heatmap_colors,
+  cluster_rows = TRUE,
+  cluster_columns = FALSE, # supervised: you can order by time
+  column_split = factor(sample_info_mnc$Donor, 
+                        levels = c("Donor1", "Donor2", "Donor3", 
+                                   "Donor4", "Donor5","Donor6")),
+  column_title_gp = gpar(fontsize = 9),
+  row_dend_gp = gpar(lwd = 0.1,col = "grey70"),
+  show_column_names = FALSE,
+  show_row_names = FALSE,
+  use_raster = FALSE,
+  top_annotation = HeatmapAnnotation(
+    Time = sample_info_mnc$Time,
+    col = list(Time = setNames(MNC_day_color, paste0("Day", 0:4))),
+    annotation_name_gp = gpar(fontsize = 9),            # <- font size for "Time"
+    simple_anno_size = unit(0.2,"cm")                  # <- annotation bar height
   )
+)
 #save
 pdf(paste0(output_dir, "4a.heatmap_mnc.pdf"), width = 4*2, height = 2.5*2)
 draw(heatmap_mnc)
@@ -471,21 +506,25 @@ dev.off()
   
 #plot
  heatmap_hpc_day0vsday1 <- Heatmap(
-    heatmap_matrix_day0day1,
-    name = "Z-score",
-    col = heatmap_colors,
-    cluster_rows = TRUE,
-    cluster_columns = FALSE, # supervised: you can order by time
-    column_split = factor(sample_info_day0day1$Time, levels = c("Day0", "Day1")),
-    show_column_names = FALSE,
-    show_row_names = TRUE,
-    row_names_gp = gpar(fontsize = 2), 
-    top_annotation = HeatmapAnnotation(Time = sample_info_day0day1$Time, 
-                                       Donor = sample_info_day0day1$Donor,
-                                       col = list(
-                                         Donor = setNames(HPC_donor_color, paste0("Donor", 1:7)),
-                                         Time = setNames(HPC_colors_day0day1, paste0("Day", 0:1))))
+  heatmap_matrix_day0day1,
+  name = "Z-score",
+  col = heatmap_colors,
+  cluster_rows = TRUE,
+  cluster_columns = FALSE, # supervised: you can order by time
+  column_split = factor(sample_info_day0day1$Time, levels = c("Day0", "Day1")),
+  column_title_gp = gpar(fontsize = 9),
+  row_dend_gp = gpar(lwd = 0.1,col = "grey70"),
+  show_column_names = FALSE,
+  show_row_names = TRUE,
+  use_raster = FALSE,
+  row_names_gp = gpar(fontsize = 3.5), 
+  top_annotation = HeatmapAnnotation(
+    Time = sample_info_day0day1$Time,
+    col = list(Time = setNames(HPC_colors_day0day1, paste0("Day", 0:1))),
+    annotation_name_gp = gpar(fontsize = 9),            # <- font size for "Time"
+    simple_anno_size = unit(0.3,"cm")                  # <- annotation bar height
   )
+)
 #save
 pdf(paste0(output_dir, "4c.heatmap_hpc_day0vsday1.pdf"), width = 2*2, height = 2.5*2)
 draw(heatmap_hpc_day0vsday1)
@@ -511,30 +550,30 @@ top_pathways <- reactome_results[order(reactome_results$pvalue, decreasing = FAL
 top_pathways
 #plot
 top100Pathway <- ggplot(reactome_results, aes(x = FoldEnrichment, y = -log10(pvalue), size = Count, color = p.adjust)) +
-    geom_point(alpha = 0.7) +
-    scale_color_gradient(low = HPC_base, high = MNC_base) +  # Color by adjusted p-value
-    geom_text(data = top_pathways, aes(label = c("TGF-beta receptor signaling",
-                                                 "Cellular surface GPI-anchored proteins",
-                                                 "c",
-                                                 "Transport of vitamins, nucleosides, and related molecules")), 
-              check_overlap = TRUE,  # Avoid overlapping labels
-              size = 1.9,              # Adjust label size
-              nudge_y = 0.1,         # Nudge labels slightly to avoid overlap
-              nudge_x = 2.6,
-              color = pathway_color) +     # Label color
-    theme_minimal() +
-    labs(x = "Fold Enrichment",
-         y = "-Log10(p-value)",
-         color = "Adjusted p-value",
-         size = "Gene Count") +
-    theme(legend.position = "right") +
-    theme(axis.text.x = element_text(size = 6.5,hjust = 1),
-          axis.text.y = element_text(size = 6.5),
-          axis.title.x = element_text(size = 8),
-          axis.title.y = element_text(size = 8),
-          title = element_text(size = 2),
-          legend.title = element_text(size = 8)
-          ) 
+  geom_point(alpha = 0.7) +
+  scale_color_gradientn(colors = heatmap_colors) +  # Color by adjusted p-value
+  geom_text(data = top_pathways, aes(label = c("TGF-beta receptor signaling",
+                                               "Cellular surface GPI-anchored proteins",
+                                               "c",
+                                               "Transport of vitamins, nucleosides, and related molecules")), 
+            check_overlap = TRUE,  # Avoid overlapping labels
+            size = 2.5,              # Adjust label size
+            nudge_y = 0.1,         # Nudge labels slightly to avoid overlap
+            nudge_x = 2.6,
+            color = pathway_color) +     # Label color
+  theme_minimal() +
+  labs(x = "Fold Enrichment",
+       y = "-Log10(p-value)",
+       color = "Adjusted p-value",
+       size = "Gene Count") +
+  theme(legend.position = "right") +
+  theme(axis.text.x = element_text(size = 6.5,hjust = 1),
+        axis.text.y = element_text(size = 6.5),
+        axis.title.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8),
+        title = element_text(size = 2),
+        legend.title = element_text(size = 8)
+  ) 
 #save
 ggsave(paste0(output_dir, paste0("4d.top100_genes_pathway.pdf")), width = 2.5*2, height = 1.8*2)
 ```
