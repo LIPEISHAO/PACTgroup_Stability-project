@@ -1,5 +1,8 @@
 # Scripts
-This is the code for generating figures in Stability project:
+This is the code for generating figures in Stability project.
+
+# Project: 
+Test the main indexes of HPC and MNC samples during storage at 4 degrees.
 
 # Citations
 Jinxia Ma, Lipei Shao, Tatyana Fuksenko, Hui Liu, Chunjie Jiang, Yihua Cai, Yong Soo Kim, Kathryn Martin, Larry Moses, Nan Zhang, Anh Dinh, Robert P. Somerville, David F. Stroncek and Ping Jin. "Stability Testing of HPCs and MNCs from Apheresis Products". Under Revision, Immunobiology.
