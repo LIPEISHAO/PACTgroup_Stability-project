@@ -1,1 +1,8 @@
-This is for the stability project from PACT group, CCE/NIH
+# Scripts
+This is the code for generating figures in Stability project:
+
+# Citations
+Jinxia Ma, Lipei Shao, Tatyana Fuksenko, Hui Liu, Chunjie Jiang, Yihua Cai, Yong Soo Kim, Kathryn Martin, Larry Moses, Nan Zhang, Anh Dinh, Robert P. Somerville, David F. Stroncek and Ping Jin. "Stability Testing of HPCs and MNCs from Apheresis Products". Under Revision, Immunobiology.
+
+# Contacts
+Dr. Lipei Shao: lipei.shao@nih.gov. Google Scholar
